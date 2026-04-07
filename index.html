@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luca System — Double Entry Book Keeping</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="img/png" href="logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<!-- Canvas background -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<!-- NAV -->
+<nav class="navbar">
+    <div class="logo">
+        <img src="luca.png" alt="Luca Logo" />
+        <div class="logo-text">
+            <span class="logo-name">Luca System</span>
+            <span class="logo-sub">Double Entry Book Keeping</span>
+        </div>
+    </div>
+    <ul class="nav-links">
+        <li><a href="#" onclick="openModal('aboutModal')"><i class="fa-solid fa-circle-info"></i> About</a></li>
+        <li><a href="#" onclick="openModal('contactModal')"><i class="fa-solid fa-envelope"></i> Contact</a></li>
+        <li><a href="#" onclick="openModal('draftsModal')" class="nav-drafts"><i class="fa-solid fa-floppy-disk"></i> Drafts <span id="draftCount" class="badge">0</span></a></li>
+        <li><a href="#" onclick="openModal('loginModal')" class="nav-login"><i class="fa-solid fa-right-to-bracket"></i> Log In</a></li>
+        <li><a href="#" onclick="openModal('registerModal')" class="nav-register"><i class="fa-solid fa-user-plus"></i> Register</a></li>
+    </ul>
+    <button class="hamburger" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></button>
+</nav>
+
+<!-- ABOUT MODAL -->
+<div id="aboutModal" class="modal">
+    <div class="modal-content modal-wide">
+        <button class="close-btn" onclick="closeModal('aboutModal')"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body split">
+            <div class="modal-canvas-side">
+                <canvas id="aboutCanvas" width="220" height="220"></canvas>
+                <div class="canvas-label">Precision Accounting</div>
+            </div>
+            <div class="modal-text-box">
+                <div class="modal-badge">About Us</div>
+                <h2>Modern Accounting, Simplified</h2>
+                <p>Welcome to Luca System — named after Luca Pacioli, the father of double-entry bookkeeping. We provide modern, innovative accounting solutions designed to streamline your business financial management.</p>
+                <p>Our platform combines precision with a user-friendly interface, helping you track, analyze, and optimize your financial processes in real time.</p>
+                <div class="about-stats">
+                    <div class="stat"><span>100%</span><small>Balanced Equations</small></div>
+                    <div class="stat"><span>∞</span><small>Transactions</small></div>
+                    <div class="stat"><span>₱</span><small>Philippine Peso</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div id="contactModal" class="modal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal('contactModal')"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body split">
+            <div class="modal-canvas-side">
+                <canvas id="contactCanvas" width="220" height="220"></canvas>
+                <div class="canvas-label">We're Here to Help</div>
+            </div>
+            <div class="modal-text">
+                <div class="modal-badge">Contact Us</div>
+                <h2>Get in Touch</h2>
+                <div class="contact-item"><i class="fa-solid fa-envelope"></i><span>support@lucasystem.com</span></div>
+                <div class="contact-item"><i class="fa-solid fa-phone"></i><span>+123 456 789</span></div>
+                <div class="contact-item"><i class="fa-solid fa-location-dot"></i><span>Philippines</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="modal">
+    <div class="modal-content modal-sm">
+        <button class="close-btn" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-canvas-side center">
+            <canvas id="loginCanvas" width="120" height="120"></canvas>
+        </div>
+        <div class="modal-badge" style="text-align:center;display:block;margin:0 auto 8px;">Log In</div>
+        <h2 style="text-align:center;margin-bottom:24px;">Welcome Back</h2>
+        <div class="form-group">
+            <label for="username"><i class="fa-solid fa-user"></i> Username</label>
+            <input type="text" id="username" placeholder="Enter your username">
+        </div>
+        <div class="form-group">
+            <label for="loginPassword"><i class="fa-solid fa-lock"></i> Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter your password">
+        </div>
+        <button class="btn-primary full-width" onclick="closeModal('loginModal')"><i class="fa-solid fa-right-to-bracket"></i> Log In</button>
+    </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div id="registerModal" class="modal">
+    <div class="modal-content modal-sm">
+        <button class="close-btn" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-canvas-side center">
+            <canvas id="registerCanvas" width="100" height="100"></canvas>
+        </div>
+        <div class="modal-badge" style="text-align:center;display:block;margin:0 auto 8px;">Register</div>
+        <h2 style="text-align:center;margin-bottom:20px;">Create Account</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>First Name</label>
+                <input type="text" placeholder="First name">
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                <input type="text" placeholder="Last name">
+            </div>
+        </div>
+        <div class="form-group">
+            <label><i class="fa-solid fa-phone"></i> Phone</label>
+            <input type="tel" placeholder="Phone number">
+        </div>
+        <div class="form-group">
+            <label><i class="fa-solid fa-envelope"></i> Email</label>
+            <input type="email" placeholder="Email address">
+        </div>
+        <div class="form-group">
+            <label><i class="fa-solid fa-lock"></i> Password</label>
+            <input type="password" placeholder="Create a password">
+        </div>
+        <button class="btn-primary full-width" onclick="closeModal('registerModal')"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+    </div>
+</div>
+
+<!-- DRAFTS MODAL -->
+<div id="draftsModal" class="modal">
+    <div class="modal-content modal-wide">
+        <button class="close-btn" onclick="closeModal('draftsModal')"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-badge">Saved Drafts</div>
+        <h2 style="margin-bottom:20px;"><i class="fa-solid fa-floppy-disk"></i> Balance Sheet Drafts</h2>
+        <div id="draftsList" class="drafts-list">
+            <div class="empty-drafts"><i class="fa-solid fa-inbox"></i><p>No saved drafts yet</p></div>
+        </div>
+        <div class="draft-actions">
+            <button class="btn-secondary" onclick="saveCurrentAsDraft()"><i class="fa-solid fa-plus"></i> Save Current as Draft</button>
+            <button class="btn-danger-outline" onclick="clearAllDrafts()"><i class="fa-solid fa-trash"></i> Clear All</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="main-wrapper">
+
+    <!-- HERO TITLE -->
+    <header class="site-header">
+        <div class="header-canvas-wrap">
+            <canvas id="headerCanvas"></canvas>
+        </div>
+        <div class="header-content">
+            <h1 class="ledger-title">
+                <span class="title-icon"><i class="fa-solid fa-scale-balanced"></i></span>
+                Luca System
+            </h1>
+            <p class="header-subtitle">Double Entry Book Keeping · Real-time Balance Sheet</p>
+            <div class="header-chips">
+                <span class="chip"><i class="fa-solid fa-database"></i> Auto-saved</span>
+                <span class="chip"><i class="fa-solid fa-shield-halved"></i> Balanced</span>
+                <span class="chip"><i class="fa-solid fa-bolt"></i> Live Updates</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- TRANSACTION INPUT CARD -->
+    <section class="card input-card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-pen-to-square"></i> New Transaction Entry</h3>
+            <div class="card-header-actions">
+                <div class="input-field date-field">
+                    <label for="transactionDate"><i class="fa-regular fa-calendar"></i> Date</label>
+                    <input type="date" id="transactionDate">
+                </div>
+            </div>
+        </div>
+
+        <div id="entryRows" class="entry-rows-container"></div>
+
+        <div class="form-footer">
+            <div id="errorMessage" class="error-message"></div>
+            <div class="form-footer-actions">
+                <button class="btn-secondary" onclick="addEntryRow()"><i class="fa-solid fa-plus"></i> Add Row</button>
+                <button class="btn-secondary" onclick="saveCurrentAsDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+                <button class="btn-primary" onclick="submitTransaction()">
+                    <i class="fa-solid fa-paper-plane"></i> Post Transaction
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- LEDGER TABLE -->
+    <section class="card table-card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-table"></i> General Ledger</h3>
+            <div class="table-actions">
+                <button class="btn-icon" onclick="triggerFileInput()" title="Import CSV"><i class="fa-solid fa-upload"></i> Import</button>
+                <button class="btn-icon green" onclick="exportToCSV()" title="Export CSV"><i class="fa-solid fa-download"></i> Export</button>
+                <button class="btn-icon red" onclick="clearAllTransactions()" title="Clear all"><i class="fa-solid fa-trash"></i> Clear</button>
+            </div>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr class="thead-group">
+                        <th rowspan="2" class="col-no">No.</th>
+                        <th rowspan="2" class="col-date">Date</th>
+                        <th colspan="6" class="group-assets">Assets</th>
+                        <th colspan="2" class="group-liabilities">Liabilities</th>
+                        <th class="group-equity">Equity</th>
+                        <th colspan="2" class="group-pl">Profit & Loss</th>
+                    </tr>
+                    <tr class="thead-sub">
+                        <th class="assets">Cash</th>
+                        <th class="assets">Accts Receivable</th>
+                        <th class="assets">Inventory</th>
+                        <th class="assets">Equipment</th>
+                        <th class="assets">Land & Bldg</th>
+                        <th class="assets">Intangible</th>
+                        <th class="liabilities">Accts Payable</th>
+                        <th class="liabilities">Unearned Rev.</th>
+                        <th class="equity">Owner's Capital</th>
+                        <th class="pl">Revenue</th>
+                        <th class="pl">Expense</th>
+                    </tr>
+                </thead>
+                <tbody id="ledgerBody">
+                    <tr class="empty-row"><td colspan="13"><i class="fa-solid fa-inbox"></i> No transactions yet</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr class="totals-row">
+                        <td colspan="2" class="totals-label">Totals</td>
+                        <td id="totalCash">₱0.00</td>
+                        <td id="totalAccountsReceivable">₱0.00</td>
+                        <td id="totalEquipment">₱0.00</td>
+                        <td id="totalInventory">₱0.00</td>
+                        <td id="totalLandBuilding">₱0.00</td>
+                        <td id="totalIntangible">₱0.00</td>
+                        <td id="totalAccountsPayable">₱0.00</td>
+                        <td id="totalUnearnedRevenue">₱0.00</td>
+                        <td id="totalOwnersCapital">₱0.00</td>
+                        <td id="totalRevenue">₱0.00</td>
+                        <td id="totalExpense">₱0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <!-- ACCOUNTING EQUATION SUMMARY -->
+    <section class="card summary-card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-chart-pie"></i> Accounting Equation Summary</h3>
+            <div id="balanceStatus" class="balance-pill balanced">
+                <i class="fa-solid fa-check-circle"></i> <span class="status">Balanced</span>
+            </div>
+        </div>
+        <div class="equation-grid">
+            <div class="equation-item assets-box">
+                <div class="eq-icon"><i class="fa-solid fa-coins"></i></div>
+                <h4>Assets</h4>
+                <div id="totalAssets" class="eq-total">₱0.00</div>
+                <div class="breakdown">
+                    <div class="breakdown-item"><span>Cash</span><span id="summaryAssetCash">₱0.00</span></div>
+                    <div class="breakdown-item"><span>Accounts Receivable</span><span id="summaryAssetAR">₱0.00</span></div>
+                    <div class="breakdown-item"><span>Inventory</span><span id="summaryAssetEquipment">₱0.00</span></div>
+                    <div class="breakdown-item"><span>Equipment</span><span id="summaryAssetInventory">₱0.00</span></div>
+                    <div class="breakdown-item"><span>Land & Building</span><span id="summaryAssetLandBuilding">₱0.00</span></div>
+                    <div class="breakdown-item"><span>Intangible</span><span id="summaryAssetIntangible">₱0.00</span></div>
+                </div>
+            </div>
+            <div class="equation-op">=</div>
+            <div class="equation-item liab-box">
+                <div class="eq-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <h4>Liabilities</h4>
+                <div id="totalLiabilities" class="eq-total">₱0.00</div>
+                <div class="breakdown">
+                    <div class="breakdown-item"><span>Accounts Payable</span><span id="summaryLiabilityAP">₱0.00</span></div>
+                    <div class="breakdown-item"><span>Unearned Revenue</span><span id="summaryLiabilityUR">₱0.00</span></div>
+                </div>
+            </div>
+            <div class="equation-op">+</div>
+            <div class="equation-item equity-box">
+                <div class="eq-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                <h4>Equity</h4>
+                <div id="totalEquity" class="eq-total">₱0.00</div>
+                <div class="breakdown">
+                    <div class="breakdown-item"><span>Owner's Capital</span><span id="summaryEquityCapital">₱0.00</span></div>
+                    <div class="breakdown-item"><span>Revenue</span><span id="summaryEquityRevenue">₱0.00</span></div>
+                    <div class="breakdown-item"><span>Expense</span><span id="summaryEquityExpense">₱0.00</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="site-footer">
+    <p>Luca System &copy; 2025 &nbsp;·&nbsp; Double Entry Book Keeping &nbsp;·&nbsp; Data saved locally</p>
+</footer>
+
+<script src="script.js"></script>
+<script src="canvas.js"></script>
+</body>
+</html>
