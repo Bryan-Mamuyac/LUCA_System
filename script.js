@@ -1,6 +1,6 @@
 /* =====================
    LUCA SYSTEM — Main Script
-   Includes: localStorage persistence, drafts, full ledger logic
+   Includes: localStorage persistence, drafts, records, full ledger logic
    ===================== */
 
 'use strict';
@@ -19,9 +19,10 @@ const totals = {
 
 // ===================== STORAGE =====================
 
-const STORAGE_KEY     = 'luca_transactions';
-const DRAFT_KEY       = 'luca_drafts';
-const COUNTER_KEY     = 'luca_counter';
+const STORAGE_KEY  = 'luca_transactions';
+const DRAFT_KEY    = 'luca_drafts';
+const COUNTER_KEY  = 'luca_counter';
+const RECORD_KEY   = 'luca_records';
 
 function saveToStorage() {
     try {
@@ -40,14 +41,16 @@ function loadFromStorage() {
 }
 
 function loadDrafts() {
-    try {
-        return JSON.parse(localStorage.getItem(DRAFT_KEY) || '[]');
-    } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '[]'); }
+    catch { return []; }
 }
+function saveDrafts(drafts) { localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts)); }
 
-function saveDrafts(drafts) {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+function loadRecords() {
+    try { return JSON.parse(localStorage.getItem(RECORD_KEY) || '[]'); }
+    catch { return []; }
 }
+function saveRecords(records) { localStorage.setItem(RECORD_KEY, JSON.stringify(records)); }
 
 // ===================== TOAST =====================
 
@@ -66,7 +69,8 @@ function openModal(id) {
     if (!modal) return;
     modal.style.display = 'flex';
     requestAnimationFrame(() => modal.classList.add('open'));
-    if (id === 'draftsModal') renderDraftsList();
+    if (id === 'draftsModal')  { renderDraftsList(); setTimeout(() => { const i = document.getElementById('draftSearchInput'); if(i) i.focus(); }, 350); }
+    if (id === 'recordsModal') { renderRecordsList(); setTimeout(() => { const i = document.getElementById('recordSearchInput'); if(i) i.focus(); }, 350); }
 }
 
 function closeModal(id) {
@@ -83,7 +87,6 @@ window.addEventListener('click', e => {
 });
 
 function toggleMobileMenu() {
-    // Basic mobile menu toggle — expand nav links
     const nav = document.querySelector('.nav-links');
     nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
     nav.style.flexDirection = 'column';
@@ -166,13 +169,11 @@ function addEntryRow(debitAcc = '', creditAcc = '', amount = '', debitType = 'de
     `;
     container.appendChild(pair);
 
-    // Pre-fill account values
     if (debitAcc)   pair.querySelector('.debit-account').value  = debitAcc;
     if (creditAcc)  pair.querySelector('.credit-account').value = creditAcc;
     if (debitType)  pair.querySelector('.debit-type').value     = debitType;
     if (creditType) pair.querySelector('.credit-type').value    = creditType;
 
-    // Sync amounts
     const amounts = pair.querySelectorAll('.amount');
     amounts.forEach(inp => {
         inp.addEventListener('input', () => {
@@ -185,7 +186,6 @@ function removeEntryPair(btn) {
     const container = document.getElementById('entryRows');
     if (container.children.length <= 1) { showToast('At least one entry pair required', 'error'); return; }
     btn.closest('.entry-pair').remove();
-    // Re-number pairs
     container.querySelectorAll('.entry-pair-header span').forEach((s, i) => {
         s.innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left" style="color:var(--primary)"></i> Entry Pair ${i + 1}`;
     });
@@ -213,7 +213,6 @@ function validateTransaction() {
             const account = row.querySelector('.account-select').value;
             const type    = row.querySelector('.entry-type').value;
             const amount  = parseFloat(row.querySelector('.amount').value) || 0;
-
             if (!account || amount === 0) { valid = false; return; }
             entries.push({ account, type, amount });
         });
@@ -230,7 +229,6 @@ function validateTransaction() {
 function submitTransaction() {
     const transaction = validateTransaction();
     if (!transaction) return;
-
     transactions.push(transaction);
     saveToStorage();
     updateTable();
@@ -367,9 +365,8 @@ function updateSummary() {
 }
 
 function checkBalance(assets, liabilities, equity) {
-    const pill   = document.getElementById('balanceStatus');
-    const diff   = Math.abs(assets - (liabilities + equity));
-
+    const pill = document.getElementById('balanceStatus');
+    const diff = Math.abs(assets - (liabilities + equity));
     if (diff < 0.01) {
         pill.className = 'balance-pill balanced';
         pill.innerHTML = `<i class="fa-solid fa-check-circle"></i> <span class="status">Balanced</span>`;
@@ -396,18 +393,23 @@ function saveCurrentAsDraft() {
 
     if (entries.length === 0) { showToast('Nothing to save — fill in at least one entry', 'error'); return; }
 
-    const drafts = loadDrafts();
-    const draft  = {
-        id:        Date.now(),
-        name:      `Draft ${drafts.length + 1}`,
-        savedAt:   new Date().toLocaleString(),
-        date:      date || null,
+    const nameInput = document.getElementById('draftNameInput');
+    const drafts    = loadDrafts();
+    const name      = (nameInput && nameInput.value.trim()) || `Draft ${drafts.length + 1}`;
+
+    const draft = {
+        id:      Date.now(),
+        name,
+        savedAt: new Date().toLocaleString(),
+        date:    date || null,
         entries,
     };
     drafts.push(draft);
     saveDrafts(drafts);
     updateDraftCount();
-    showToast(`Saved as "${draft.name}"`, 'success');
+    if (nameInput) nameInput.value = '';
+    renderDraftsList();
+    showToast(`Saved as "${name}"`, 'success');
 }
 
 function loadDraft(id) {
@@ -418,7 +420,6 @@ function loadDraft(id) {
     document.getElementById('entryRows').innerHTML = '';
     if (draft.date) document.getElementById('transactionDate').value = draft.date;
 
-    // Group entries in pairs (debit/credit)
     for (let i = 0; i < draft.entries.length; i += 2) {
         const de = draft.entries[i];
         const ce = draft.entries[i + 1] || { account: '', type: 'credit', amount: 0 };
@@ -446,19 +447,25 @@ function clearAllDrafts() {
 }
 
 function renderDraftsList() {
+    const q = ((document.getElementById('draftSearchInput') || {}).value || '').trim().toLowerCase();
     const drafts = loadDrafts();
-    const list   = document.getElementById('draftsList');
-    if (!list) return;
+    const filtered = q ? drafts.filter(d => d.name.toLowerCase().includes(q)) : drafts;
+    renderDraftsToList(filtered, q);
+}
 
+function renderDraftsToList(drafts, query = '') {
+    const list = document.getElementById('draftsList');
+    if (!list) return;
     if (drafts.length === 0) {
-        list.innerHTML = '<div class="empty-drafts"><i class="fa-solid fa-inbox"></i><p>No saved drafts yet</p></div>';
+        list.innerHTML = query
+            ? `<div class="empty-drafts"><i class="fa-solid fa-magnifying-glass"></i><p>No drafts match "<strong>${escapeHtml(query)}</strong>"</p></div>`
+            : '<div class="empty-drafts"><i class="fa-solid fa-inbox"></i><p>No saved drafts yet</p></div>';
         return;
     }
-
-    list.innerHTML = drafts.reverse().map(d => `
+    list.innerHTML = [...drafts].reverse().map(d => `
         <div class="draft-item">
             <div class="draft-info">
-                <h4><i class="fa-solid fa-file-lines" style="color:var(--primary);margin-right:6px"></i>${d.name}</h4>
+                <h4><i class="fa-solid fa-file-lines" style="color:var(--primary);margin-right:6px"></i>${escapeHtml(d.name)}</h4>
                 <p>${d.entries.length} entries · ${d.date ? formatDate(d.date) : 'No date'} · Saved ${d.savedAt}</p>
             </div>
             <div class="draft-btns">
@@ -472,6 +479,175 @@ function renderDraftsList() {
 function updateDraftCount() {
     const el = document.getElementById('draftCount');
     if (el) el.textContent = loadDrafts().length;
+}
+
+function filterDrafts(query) {
+    const q = query.trim().toLowerCase();
+    const drafts = loadDrafts();
+    const filtered = q ? drafts.filter(d => d.name.toLowerCase().includes(q)) : drafts;
+    renderDraftsToList(filtered, q);
+}
+
+function filterRecords(query) {
+    const q = query.trim().toLowerCase();
+    const records = loadRecords();
+    const filtered = q ? records.filter(r => r.name.toLowerCase().includes(q)) : records;
+    renderRecordsToList(filtered, q);
+}
+
+// ===================== RECORDS =====================
+
+/**
+ * Save the current full ledger state as a named record.
+ * A record captures: all transactions, current totals snapshot,
+ * the accounting equation figures, and balance status.
+ */
+function promptSaveRecord() {
+    openModal('recordsModal');
+    // Focus the name input after animation
+    setTimeout(() => {
+        const input = document.getElementById('recordNameInput');
+        if (input) input.focus();
+    }, 350);
+}
+
+function saveCurrentAsRecord() {
+    if (transactions.length === 0) {
+        showToast('No transactions to record — post some entries first', 'error');
+        return;
+    }
+
+    const nameInput = document.getElementById('recordNameInput');
+    const records   = loadRecords();
+    const name      = (nameInput && nameInput.value.trim()) || `Record ${records.length + 1}`;
+
+    const totalAssets      = totals.cash + totals.accountsReceivable + totals.inventory + totals.equipment + totals.landBuilding + totals.intangible;
+    const totalLiabilities = totals.accountsPayable + totals.unearnedRevenue;
+    const totalEquity      = totals.ownersCapital + totals.revenue + totals.expense;
+    const isBalanced       = Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01;
+
+    const record = {
+        id:           Date.now(),
+        name,
+        savedAt:      new Date().toLocaleString(),
+        txCount:      transactions.length,
+        transactions: JSON.parse(JSON.stringify(transactions)),   // deep copy
+        counter:      transactionCounter,
+        totalsSnap: {
+            assets:      totalAssets,
+            liabilities: totalLiabilities,
+            equity:      totalEquity,
+        },
+        isBalanced,
+    };
+
+    records.push(record);
+    saveRecords(records);
+    updateRecordCount();
+    renderRecordsList();
+
+    if (nameInput) nameInput.value = '';
+    showToast(`Record "${name}" saved successfully`, 'success');
+}
+
+function restoreRecord(id) {
+    const records = loadRecords();
+    const record  = records.find(r => r.id === id);
+    if (!record) return;
+
+    if (!confirm(`Restore record "${record.name}"?\n\nThis will REPLACE your current ledger with the saved state. This cannot be undone.`)) return;
+
+    transactions       = JSON.parse(JSON.stringify(record.transactions));
+    transactionCounter = record.counter;
+    saveToStorage();
+    updateTable();
+    updateSummary();
+    closeModal('recordsModal');
+    showToast(`Ledger restored from "${record.name}"`, 'success');
+}
+
+function deleteRecord(id) {
+    let records = loadRecords().filter(r => r.id !== id);
+    saveRecords(records);
+    updateRecordCount();
+    renderRecordsList();
+    showToast('Record deleted', 'info');
+}
+
+function clearAllRecords() {
+    if (!confirm('Clear all records? This cannot be undone.')) return;
+    saveRecords([]);
+    updateRecordCount();
+    renderRecordsList();
+    showToast('All records cleared', 'info');
+}
+
+function renderRecordsList() {
+    const q = ((document.getElementById('recordSearchInput') || {}).value || '').trim().toLowerCase();
+    const records = loadRecords();
+    const filtered = q ? records.filter(r => r.name.toLowerCase().includes(q)) : records;
+    renderRecordsToList(filtered, q);
+}
+
+function renderRecordsToList(records, query = '') {
+    const list = document.getElementById('recordsList');
+    if (!list) return;
+
+    if (records.length === 0) {
+        list.innerHTML = query
+            ? `<div class="empty-drafts"><i class="fa-solid fa-magnifying-glass"></i><p>No records match "<strong>${escapeHtml(query)}</strong>"</p></div>`
+            : '<div class="empty-drafts"><i class="fa-solid fa-book-open"></i><p>No records saved yet</p></div>';
+        return;
+    }
+
+    list.innerHTML = [...records].reverse().map(r => `
+        <div class="record-item">
+            <div class="record-item-header">
+                <div class="record-info">
+                    <h4>
+                        <i class="fa-solid fa-bookmark" style="color:var(--success)"></i>
+                        ${escapeHtml(r.name)}
+                    </h4>
+                    <p>${r.txCount} transaction${r.txCount !== 1 ? 's' : ''} &nbsp;·&nbsp; Saved ${r.savedAt}</p>
+                </div>
+                <span class="record-balance-badge ${r.isBalanced ? 'ok' : 'bad'}">
+                    <i class="fa-solid fa-${r.isBalanced ? 'check' : 'triangle-exclamation'}"></i>
+                    ${r.isBalanced ? 'Balanced' : 'Not Balanced'}
+                </span>
+            </div>
+            <div class="record-snapshot">
+                <div class="record-snap-item snap-assets">
+                    <span class="snap-label">Assets</span>
+                    <span class="snap-value">₱${Math.abs(r.totalsSnap.assets).toFixed(2)}</span>
+                </div>
+                <div class="record-snap-item snap-liab">
+                    <span class="snap-label">Liabilities</span>
+                    <span class="snap-value">₱${Math.abs(r.totalsSnap.liabilities).toFixed(2)}</span>
+                </div>
+                <div class="record-snap-item snap-equity">
+                    <span class="snap-label">Equity</span>
+                    <span class="snap-value">₱${Math.abs(r.totalsSnap.equity).toFixed(2)}</span>
+                </div>
+            </div>
+            <div class="record-btns">
+                <button class="record-restore-btn" onclick="restoreRecord(${r.id})">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i> Load
+                </button>
+                <button class="record-del-btn" onclick="deleteRecord(${r.id})">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateRecordCount() {
+    const el = document.getElementById('recordCount');
+    if (el) el.textContent = loadRecords().length;
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ===================== CLEAR ALL =====================
@@ -564,8 +740,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTable();
     updateSummary();
     updateDraftCount();
+    updateRecordCount();
 
-    // Set today's date as default
     const dateInput = document.getElementById('transactionDate');
     if (dateInput && !dateInput.value) {
         dateInput.value = new Date().toISOString().slice(0, 10);

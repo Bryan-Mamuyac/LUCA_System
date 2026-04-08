@@ -6,7 +6,7 @@
     <title>Luca System — Double Entry Book Keeping</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="img/png" href="logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -30,6 +30,7 @@
         <li><a href="#" onclick="openModal('aboutModal')"><i class="fa-solid fa-circle-info"></i> About</a></li>
         <li><a href="#" onclick="openModal('contactModal')"><i class="fa-solid fa-envelope"></i> Contact</a></li>
         <li><a href="#" onclick="openModal('draftsModal')" class="nav-drafts"><i class="fa-solid fa-floppy-disk"></i> Drafts <span id="draftCount" class="badge">0</span></a></li>
+        <li><a href="#" onclick="openModal('recordsModal')" class="nav-records"><i class="fa-solid fa-book-bookmark"></i> Records <span id="recordCount" class="badge green">0</span></a></li>
         <li><a href="#" onclick="openModal('loginModal')" class="nav-login"><i class="fa-solid fa-right-to-bracket"></i> Log In</a></li>
         <li><a href="#" onclick="openModal('registerModal')" class="nav-register"><i class="fa-solid fa-user-plus"></i> Register</a></li>
     </ul>
@@ -49,7 +50,7 @@
                 <div class="modal-badge">About Us</div>
                 <h2>Modern Accounting, Simplified</h2>
                 <p>Welcome to Luca System — named after Luca Pacioli, the father of double-entry bookkeeping. We provide modern, innovative accounting solutions designed to streamline your business financial management.</p>
-                <p>Our platform combines precision with a user-friendly interface, helping you track, analyze, and optimize your financial processes in real time.</p>
+                <p style="margin-top:10px;">Our platform combines precision with a user-friendly interface, helping you track, analyze, and optimize your financial processes in real time.</p>
                 <div class="about-stats">
                     <div class="stat"><span>100%</span><small>Balanced Equations</small></div>
                     <div class="stat"><span>∞</span><small>Transactions</small></div>
@@ -60,13 +61,13 @@
     </div>
 </div>
 
-<!-- CONTACT MODAL -->
+<!-- CONTACT MODAL (FIXED) -->
 <div id="contactModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content modal-wide">
         <button class="close-btn" onclick="closeModal('contactModal')"><i class="fa-solid fa-xmark"></i></button>
         <div class="modal-body split">
             <div class="modal-canvas-side">
-                <canvas id="contactCanvas" width="220" height="220"></canvas>
+                <canvas id="contactCanvas" width="200" height="200"></canvas>
                 <div class="canvas-label">We're Here to Help</div>
             </div>
             <div class="modal-text">
@@ -141,13 +142,60 @@
     <div class="modal-content modal-wide">
         <button class="close-btn" onclick="closeModal('draftsModal')"><i class="fa-solid fa-xmark"></i></button>
         <div class="modal-badge">Saved Drafts</div>
-        <h2 style="margin-bottom:20px;"><i class="fa-solid fa-floppy-disk"></i> Balance Sheet Drafts</h2>
+        <h2 style="margin-bottom:16px;"><i class="fa-solid fa-floppy-disk"></i> Balance Sheet Drafts</h2>
+
+        <!-- Search -->
+        <div class="modal-search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="draftSearchInput" placeholder="Search drafts by name..." oninput="filterDrafts(this.value)">
+        </div>
+
         <div id="draftsList" class="drafts-list">
             <div class="empty-drafts"><i class="fa-solid fa-inbox"></i><p>No saved drafts yet</p></div>
         </div>
-        <div class="draft-actions">
-            <button class="btn-secondary" onclick="saveCurrentAsDraft()"><i class="fa-solid fa-plus"></i> Save Current as Draft</button>
-            <button class="btn-danger-outline" onclick="clearAllDrafts()"><i class="fa-solid fa-trash"></i> Clear All</button>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+        <!-- Save section -->
+        <div class="modal-save-section">
+            <p class="save-section-label"><i class="fa-solid fa-floppy-disk" style="color:var(--primary)"></i> Save current entry as draft</p>
+            <div class="save-section-row">
+                <input type="text" id="draftNameInput" placeholder="Draft name (optional)..." style="flex:1;">
+                <button class="btn-secondary" onclick="saveCurrentAsDraft()"><i class="fa-solid fa-plus"></i> Save Draft</button>
+                <button class="btn-danger-outline" onclick="clearAllDrafts()"><i class="fa-solid fa-trash"></i> Clear All</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- RECORDS MODAL -->
+<div id="recordsModal" class="modal">
+    <div class="modal-content modal-wide">
+        <button class="close-btn" onclick="closeModal('recordsModal')"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-badge" style="background:var(--equity-bg);color:var(--equity-text);">Ledger Records</div>
+        <h2 style="margin-bottom:6px;"><i class="fa-solid fa-book-bookmark" style="color:var(--success)"></i> Saved Records</h2>
+        <p style="font-size:0.8rem;color:var(--text-3);margin-bottom:16px;">Snapshots of your full ledger — saved for reference or restoration.</p>
+
+        <!-- Search -->
+        <div class="modal-search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="recordSearchInput" placeholder="Search records by name..." oninput="filterRecords(this.value)">
+        </div>
+
+        <div id="recordsList" class="records-list">
+            <div class="empty-drafts"><i class="fa-solid fa-book-open"></i><p>No records saved yet</p></div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+        <!-- Save section -->
+        <div class="modal-save-section">
+            <p class="save-section-label"><i class="fa-solid fa-bookmark" style="color:var(--success)"></i> Save current ledger as a record</p>
+            <div class="save-section-row">
+                <input type="text" id="recordNameInput" placeholder="Record name (optional)..." style="flex:1;">
+                <button class="btn-success" onclick="saveCurrentAsRecord()"><i class="fa-solid fa-bookmark"></i> Save Record</button>
+                <button class="btn-danger-outline" onclick="clearAllRecords()"><i class="fa-solid fa-trash"></i> Clear All</button>
+            </div>
         </div>
     </div>
 </div>
@@ -192,7 +240,7 @@
             <div id="errorMessage" class="error-message"></div>
             <div class="form-footer-actions">
                 <button class="btn-secondary" onclick="addEntryRow()"><i class="fa-solid fa-plus"></i> Add Row</button>
-                <button class="btn-secondary" onclick="saveCurrentAsDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+                <button class="btn-secondary" onclick="openModal('draftsModal')"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
                 <button class="btn-primary" onclick="submitTransaction()">
                     <i class="fa-solid fa-paper-plane"></i> Post Transaction
                 </button>
@@ -207,6 +255,7 @@
             <div class="table-actions">
                 <button class="btn-icon" onclick="triggerFileInput()" title="Import CSV"><i class="fa-solid fa-upload"></i> Import</button>
                 <button class="btn-icon green" onclick="exportToCSV()" title="Export CSV"><i class="fa-solid fa-download"></i> Export</button>
+                <button class="btn-icon teal" onclick="promptSaveRecord()" title="Save as Record"><i class="fa-solid fa-bookmark"></i> Save Record</button>
                 <button class="btn-icon red" onclick="clearAllTransactions()" title="Clear all"><i class="fa-solid fa-trash"></i> Clear</button>
             </div>
         </div>
