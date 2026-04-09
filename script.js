@@ -245,6 +245,43 @@ function resetForm() {
 
 // ===================== TABLE RENDERING =====================
 
+/*
+ * DOUBLE-ENTRY ACCOUNTING RULES (Luca Pacioli, 1494)
+ * ─────────────────────────────────────────────────
+ * Account Type     │ Normal Balance │ Debit Effect │ Credit Effect
+ * ─────────────────┼────────────────┼──────────────┼──────────────
+ * Assets           │ Debit          │ ↑ Increase   │ ↓ Decrease
+ * Liabilities      │ Credit         │ ↓ Decrease   │ ↑ Increase
+ * Owner's Capital  │ Credit         │ ↓ Decrease   │ ↑ Increase
+ * Revenue          │ Credit         │ ↓ Decrease   │ ↑ Increase
+ * Expense          │ Debit          │ ↑ Increase   │ ↓ Decrease
+ *
+ * Accounting Equation:
+ *   Assets = Liabilities + Equity
+ *   Equity = Owner's Capital + Revenue − Expense
+ *
+ * In the ledger columns we store the NATURAL BALANCE effect:
+ *   Assets & Expense : Debit = +, Credit = −
+ *   Liabilities, Capital, Revenue: Credit = +, Debit = −
+ */
+
+// Which accounts have a CREDIT normal balance (increase on credit)
+const CREDIT_NORMAL = new Set(['accountsPayable','unearnedRevenue','ownersCapital','revenue']);
+// Which accounts have a DEBIT normal balance (increase on debit)
+// assets: cash, accountsReceivable, inventory, equipment, landBuilding, intangible
+// expense: expense
+
+function accountEffect(account, type) {
+    // Returns the signed multiplier for how this entry affects the account's balance
+    // Credit-normal accounts: credit = +1, debit = -1
+    // Debit-normal accounts:  debit = +1, credit = -1
+    if (CREDIT_NORMAL.has(account)) {
+        return type === 'credit' ? 1 : -1;
+    } else {
+        return type === 'debit' ? 1 : -1;
+    }
+}
+
 function formatAmount(amount, isFirst, type) {
     const abs  = Math.abs(amount).toFixed(2);
     const sign = type === 'debit' ? '+' : '–';
@@ -280,13 +317,19 @@ function updateTable() {
         Object.keys(totals).forEach(k => { cols[k] = row.insertCell(); });
 
         tx.entries.forEach(entry => {
-            const cell   = cols[entry.account];
+            const cell = cols[entry.account];
             if (!cell) return;
-            const amount = entry.type === 'debit' ? entry.amount : -entry.amount;
+
+            // Apply correct accounting effect based on account type
+            const effect = accountEffect(entry.account, entry.type);
+            const signedAmount = entry.amount * effect;
+
             const isFirst = firstEntry[entry.account];
-            cell.textContent = formatAmount(amount, isFirst, entry.type);
+            cell.textContent = formatAmount(entry.amount, isFirst, entry.type);
             cell.className   = entry.type === 'debit' ? 'debit' : 'credit';
-            totals[entry.account] += amount;
+
+            // Accumulate using the NATURAL BALANCE effect
+            totals[entry.account] += signedAmount;
             if (isFirst) firstEntry[entry.account] = false;
         });
 
@@ -336,16 +379,26 @@ function updateTotalsDisplay() {
 
 // ===================== SUMMARY =====================
 
-function fc(n) { return `₱${Math.abs(n).toFixed(2)}`; }
+function fc(n) {
+    const sign = n < 0 ? '–' : '';
+    return `${sign}₱${Math.abs(n).toFixed(2)}`;
+}
 
 function updateSummary() {
-    const totalAssets      = totals.cash + totals.accountsReceivable + totals.inventory + totals.equipment + totals.landBuilding + totals.intangible;
-    const totalLiabilities = totals.accountsPayable + totals.unearnedRevenue;
-    const totalEquity      = totals.ownersCapital + totals.revenue + totals.expense;
+    // Assets: sum of all asset account natural balances (debit-normal → positive = asset)
+    const totalAssets = totals.cash + totals.accountsReceivable + totals.inventory
+                      + totals.equipment + totals.landBuilding + totals.intangible;
 
-    document.getElementById('totalAssets').textContent      = `₱${totalAssets.toFixed(2)}`;
-    document.getElementById('totalLiabilities').textContent = `₱${totalLiabilities.toFixed(2)}`;
-    document.getElementById('totalEquity').textContent      = `₱${totalEquity.toFixed(2)}`;
+    // Liabilities: sum of liability accounts (credit-normal → positive = owed)
+    const totalLiabilities = totals.accountsPayable + totals.unearnedRevenue;
+
+    // Equity = Owner's Capital + Revenue − Expense
+    // (Revenue increases equity, Expense decreases equity)
+    const totalEquity = totals.ownersCapital + totals.revenue - totals.expense;
+
+    document.getElementById('totalAssets').textContent      = fc(totalAssets);
+    document.getElementById('totalLiabilities').textContent = fc(totalLiabilities);
+    document.getElementById('totalEquity').textContent      = fc(totalEquity);
 
     document.getElementById('summaryAssetCash').textContent         = fc(totals.cash);
     document.getElementById('summaryAssetAR').textContent           = fc(totals.accountsReceivable);
