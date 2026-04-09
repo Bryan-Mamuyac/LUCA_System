@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,13 @@
     <link rel="icon" type="img/png" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script>
+      // Apply theme BEFORE paint to avoid flash
+      (function() {
+        const t = localStorage.getItem('luca_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
 </head>
 <body>
 
@@ -31,8 +38,18 @@
         <li><a href="#" onclick="openModal('contactModal')"><i class="fa-solid fa-envelope"></i> Contact</a></li>
         <li><a href="#" onclick="openModal('draftsModal')" class="nav-drafts"><i class="fa-solid fa-floppy-disk"></i> Drafts <span id="draftCount" class="badge">0</span></a></li>
         <li><a href="#" onclick="openModal('recordsModal')" class="nav-records"><i class="fa-solid fa-book-bookmark"></i> Records <span id="recordCount" class="badge green">0</span></a></li>
-        <li><a href="#" onclick="openModal('loginModal')" class="nav-login"><i class="fa-solid fa-right-to-bracket"></i> Log In</a></li>
-        <li><a href="#" onclick="openModal('registerModal')" class="nav-register"><i class="fa-solid fa-user-plus"></i> Register</a></li>
+        <li>
+            <div class="nav-user-info" id="navUserInfo">
+                <i class="fa-solid fa-circle-user"></i>
+                <span id="navUsername">—</span>
+            </div>
+        </li>
+        <li>
+            <button class="nav-theme-btn" id="themeToggle" title="Toggle dark mode" onclick="toggleTheme()">
+                <i class="fa-solid fa-moon" id="themeIcon"></i>
+            </button>
+        </li>
+        <li><a href="#" onclick="handleLogout()" class="nav-logout"><i class="fa-solid fa-right-from-bracket"></i> Log Out</a></li>
     </ul>
     <button class="hamburger" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></button>
 </nav>
@@ -81,61 +98,6 @@
     </div>
 </div>
 
-<!-- LOGIN MODAL -->
-<div id="loginModal" class="modal">
-    <div class="modal-content modal-sm">
-        <button class="close-btn" onclick="closeModal('loginModal')"><i class="fa-solid fa-xmark"></i></button>
-        <div class="modal-canvas-side center">
-            <canvas id="loginCanvas" width="120" height="120"></canvas>
-        </div>
-        <div class="modal-badge" style="text-align:center;display:block;margin:0 auto 8px;">Log In</div>
-        <h2 style="text-align:center;margin-bottom:24px;">Welcome Back</h2>
-        <div class="form-group">
-            <label for="username"><i class="fa-solid fa-user"></i> Username</label>
-            <input type="text" id="username" placeholder="Enter your username">
-        </div>
-        <div class="form-group">
-            <label for="loginPassword"><i class="fa-solid fa-lock"></i> Password</label>
-            <input type="password" id="loginPassword" placeholder="Enter your password">
-        </div>
-        <button class="btn-primary full-width" onclick="closeModal('loginModal')"><i class="fa-solid fa-right-to-bracket"></i> Log In</button>
-    </div>
-</div>
-
-<!-- REGISTER MODAL -->
-<div id="registerModal" class="modal">
-    <div class="modal-content modal-sm">
-        <button class="close-btn" onclick="closeModal('registerModal')"><i class="fa-solid fa-xmark"></i></button>
-        <div class="modal-canvas-side center">
-            <canvas id="registerCanvas" width="100" height="100"></canvas>
-        </div>
-        <div class="modal-badge" style="text-align:center;display:block;margin:0 auto 8px;">Register</div>
-        <h2 style="text-align:center;margin-bottom:20px;">Create Account</h2>
-        <div class="form-row">
-            <div class="form-group">
-                <label>First Name</label>
-                <input type="text" placeholder="First name">
-            </div>
-            <div class="form-group">
-                <label>Last Name</label>
-                <input type="text" placeholder="Last name">
-            </div>
-        </div>
-        <div class="form-group">
-            <label><i class="fa-solid fa-phone"></i> Phone</label>
-            <input type="tel" placeholder="Phone number">
-        </div>
-        <div class="form-group">
-            <label><i class="fa-solid fa-envelope"></i> Email</label>
-            <input type="email" placeholder="Email address">
-        </div>
-        <div class="form-group">
-            <label><i class="fa-solid fa-lock"></i> Password</label>
-            <input type="password" placeholder="Create a password">
-        </div>
-        <button class="btn-primary full-width" onclick="closeModal('registerModal')"><i class="fa-solid fa-user-plus"></i> Create Account</button>
-    </div>
-</div>
 
 <!-- DRAFTS MODAL -->
 <div id="draftsModal" class="modal">
@@ -361,5 +323,54 @@
 
 <script src="script.js"></script>
 <script src="canvas.js"></script>
+<script>
+// ---- AUTH GUARD ----
+(async function authGuard() {
+  const token = localStorage.getItem('luca_token');
+  if (!token) {
+    window.location.href = 'login.html';
+    return;
+  }
+  try {
+    const res = await fetch('/api/verify', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('invalid');
+    const data = await res.json();
+    // Show username in navbar
+    const el = document.getElementById('navUsername');
+    if (el) el.textContent = data.user.firstName + ' ' + data.user.lastName;
+  } catch {
+    localStorage.removeItem('luca_token');
+    localStorage.removeItem('luca_user');
+    window.location.href = 'login.html';
+  }
+})();
+
+// ---- THEME ----
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('luca_theme', next);
+  const icon = document.getElementById('themeIcon');
+  if (icon) icon.className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+}
+
+// Apply saved theme icon on load
+(function() {
+  const t = localStorage.getItem('luca_theme') || 'light';
+  const icon = document.getElementById('themeIcon');
+  if (icon) icon.className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+})();
+
+// ---- LOGOUT ----
+function handleLogout() {
+  if (!confirm('Log out of Luca System?')) return;
+  localStorage.removeItem('luca_token');
+  localStorage.removeItem('luca_user');
+  window.location.href = 'login.html';
+}
+</script>
 </body>
 </html>

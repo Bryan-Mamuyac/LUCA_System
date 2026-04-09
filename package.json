@@ -1,0 +1,14 @@
+{
+  "name": "luca-system",
+  "version": "1.0.0",
+  "description": "Luca System — Double Entry Bookkeeping",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@vercel/kv": "^1.0.1",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.2.3"
+  }
+}

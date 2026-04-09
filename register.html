@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luca System — Create Account</title>
+  <link rel="icon" type="img/png" href="logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<!-- Dark mode toggle -->
+<button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+  <i class="fa-solid fa-moon" id="themeIcon"></i>
+</button>
+
+<div class="auth-wrapper">
+  <div class="auth-card auth-card-wide">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <img src="logo.png" alt="Luca Logo" onerror="this.style.display='none'">
+      <div class="auth-logo-text">
+        <span class="auth-logo-name">Luca System</span>
+        <span class="auth-logo-sub">Double Entry Book Keeping</span>
+      </div>
+    </div>
+
+    <div class="auth-divider"></div>
+
+    <div class="auth-badge" style="background:var(--equity-bg);color:var(--equity-text);">New Account</div>
+    <h1 class="auth-title">Create your account</h1>
+    <p class="auth-subtitle">Fill in your details to get started with Luca System.</p>
+
+    <div id="errorBanner" class="auth-banner error" style="display:none;"></div>
+    <div id="successBanner" class="auth-banner success" style="display:none;"></div>
+
+    <form id="registerForm" onsubmit="handleRegister(event)" novalidate>
+
+      <!-- Name row -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="firstName"><i class="fa-solid fa-id-card"></i> First Name</label>
+          <div class="input-wrap">
+            <input type="text" id="firstName" name="firstName"
+                   placeholder="Juan" required autocomplete="given-name">
+          </div>
+          <span class="field-error" id="firstNameErr"></span>
+        </div>
+        <div class="form-group">
+          <label for="lastName">Last Name</label>
+          <div class="input-wrap">
+            <input type="text" id="lastName" name="lastName"
+                   placeholder="dela Cruz" required autocomplete="family-name">
+          </div>
+          <span class="field-error" id="lastNameErr"></span>
+        </div>
+      </div>
+
+      <!-- Username -->
+      <div class="form-group">
+        <label for="username"><i class="fa-solid fa-at"></i> Username</label>
+        <div class="input-wrap">
+          <input type="text" id="username" name="username"
+                 placeholder="juandelacruz" required autocomplete="username"
+                 oninput="checkUsernameAvail(this.value)">
+          <span class="input-status" id="usernameStatus"></span>
+        </div>
+        <span class="field-error" id="usernameErr"></span>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+        <div class="input-wrap">
+          <input type="email" id="email" name="email"
+                 placeholder="juan@email.com" required autocomplete="email">
+        </div>
+        <span class="field-error" id="emailErr"></span>
+      </div>
+
+      <!-- Phone -->
+      <div class="form-group">
+        <label for="phone"><i class="fa-solid fa-phone"></i> Phone <span class="optional-label">(optional)</span></label>
+        <div class="input-wrap">
+          <input type="tel" id="phone" name="phone"
+                 placeholder="+63 9XX XXX XXXX" autocomplete="tel">
+        </div>
+      </div>
+
+      <!-- Password row -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" name="password"
+                   placeholder="Min. 6 characters" required autocomplete="new-password"
+                   oninput="checkPasswordStrength(this.value)">
+            <button type="button" class="toggle-pw" onclick="togglePassword('password', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <div class="strength-bar" id="strengthBar">
+            <div class="strength-fill" id="strengthFill"></div>
+          </div>
+          <span class="strength-label" id="strengthLabel"></span>
+          <span class="field-error" id="passwordErr"></span>
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword"><i class="fa-solid fa-lock"></i> Confirm Password</label>
+          <div class="input-wrap">
+            <input type="password" id="confirmPassword" name="confirmPassword"
+                   placeholder="Repeat password" required autocomplete="new-password">
+            <button type="button" class="toggle-pw" onclick="togglePassword('confirmPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <span class="field-error" id="confirmPasswordErr"></span>
+        </div>
+      </div>
+
+      <!-- Terms -->
+      <div class="terms-row">
+        <input type="checkbox" id="terms" required>
+        <label for="terms">I agree to the <a href="#" onclick="return false">Terms of Service</a> and <a href="#" onclick="return false">Privacy Policy</a></label>
+      </div>
+      <span class="field-error" id="termsErr"></span>
+
+      <button type="submit" class="btn-auth" id="submitBtn">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Create Account</span>
+        <span class="btn-spinner" id="spinner" style="display:none;"><i class="fa-solid fa-spinner fa-spin"></i></span>
+      </button>
+
+    </form>
+
+    <p class="auth-switch">
+      Already have an account?
+      <a href="login.html">Log in <i class="fa-solid fa-arrow-right"></i></a>
+    </p>
+
+  </div>
+</div>
+
+<script src="canvas.js" defer></script>
+<script>
+  // ---- Theme ----
+  (function() {
+    const saved = localStorage.getItem('luca_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+    updateThemeIcon(saved);
+  })();
+
+  function updateThemeIcon(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (!icon) return;
+    icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('luca_theme', next);
+    updateThemeIcon(next);
+  });
+
+  // ---- Already logged in? ----
+  (function() {
+    const token = localStorage.getItem('luca_token');
+    if (token) {
+      fetch('/api/verify', { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(r => { if (r.ok) window.location.href = 'index.html'; })
+        .catch(() => {});
+    }
+  })();
+
+  // ---- Password visibility ----
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa-solid fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa-solid fa-eye';
+    }
+  }
+
+  // ---- Password strength ----
+  function checkPasswordStrength(val) {
+    const fill  = document.getElementById('strengthFill');
+    const label = document.getElementById('strengthLabel');
+    if (!val) { fill.style.width = '0'; label.textContent = ''; return; }
+
+    let score = 0;
+    if (val.length >= 6)  score++;
+    if (val.length >= 10) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const levels = [
+      { pct: '20%', color: '#ef4444', text: 'Very weak' },
+      { pct: '40%', color: '#f97316', text: 'Weak' },
+      { pct: '60%', color: '#f59e0b', text: 'Fair' },
+      { pct: '80%', color: '#3b82f6', text: 'Strong' },
+      { pct: '100%', color: '#10b981', text: 'Very strong' },
+    ];
+    const lvl = levels[Math.min(score - 1, 4)] || levels[0];
+    fill.style.width = lvl.pct;
+    fill.style.background = lvl.color;
+    label.textContent = lvl.text;
+    label.style.color = lvl.color;
+  }
+
+  // ---- Username availability (debounced) ----
+  let usernameTimer;
+  function checkUsernameAvail(val) {
+    const status = document.getElementById('usernameStatus');
+    clearTimeout(usernameTimer);
+    val = val.trim().toLowerCase();
+    if (val.length < 3) { status.textContent = ''; return; }
+
+    status.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color:var(--text-3)"></i>';
+
+    usernameTimer = setTimeout(async () => {
+      // We don't have a dedicated check endpoint, so we just validate format here.
+      // Real availability is checked server-side on submit.
+      const valid = /^[a-z0-9_]{3,20}$/.test(val);
+      if (!valid) {
+        status.innerHTML = '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i>';
+        document.getElementById('usernameErr').textContent = 'Only letters, numbers, underscores. 3–20 chars.';
+      } else {
+        status.innerHTML = '<i class="fa-solid fa-check" style="color:var(--success)"></i>';
+        document.getElementById('usernameErr').textContent = '';
+      }
+    }, 400);
+  }
+
+  // ---- Banners ----
+  function showError(msg) {
+    const el = document.getElementById('errorBanner');
+    el.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}`;
+    el.style.display = 'flex';
+    document.getElementById('successBanner').style.display = 'none';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function showSuccess(msg) {
+    const el = document.getElementById('successBanner');
+    el.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${msg}`;
+    el.style.display = 'flex';
+    document.getElementById('errorBanner').style.display = 'none';
+  }
+
+  // ---- Submit ----
+  async function handleRegister(e) {
+    e.preventDefault();
+
+    const firstName       = document.getElementById('firstName').value.trim();
+    const lastName        = document.getElementById('lastName').value.trim();
+    const username        = document.getElementById('username').value.trim();
+    const email           = document.getElementById('email').value.trim();
+    const phone           = document.getElementById('phone').value.trim();
+    const password        = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const terms           = document.getElementById('terms').checked;
+
+    // Clear all errors
+    ['firstNameErr','lastNameErr','usernameErr','emailErr','passwordErr','confirmPasswordErr','termsErr']
+      .forEach(id => document.getElementById(id).textContent = '');
+    document.getElementById('errorBanner').style.display = 'none';
+
+    let valid = true;
+
+    if (!firstName) { document.getElementById('firstNameErr').textContent = 'Required.'; valid = false; }
+    if (!lastName)  { document.getElementById('lastNameErr').textContent = 'Required.'; valid = false; }
+    if (!username)  { document.getElementById('usernameErr').textContent = 'Required.'; valid = false; }
+    else if (!/^[a-z0-9_]{3,20}$/.test(username.toLowerCase())) {
+      document.getElementById('usernameErr').textContent = 'Only letters, numbers, underscores. 3–20 chars.';
+      valid = false;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      document.getElementById('emailErr').textContent = 'Enter a valid email address.';
+      valid = false;
+    }
+    if (!password || password.length < 6) {
+      document.getElementById('passwordErr').textContent = 'Password must be at least 6 characters.';
+      valid = false;
+    }
+    if (password !== confirmPassword) {
+      document.getElementById('confirmPasswordErr').textContent = 'Passwords do not match.';
+      valid = false;
+    }
+    if (!terms) {
+      document.getElementById('termsErr').textContent = 'You must agree to the terms.';
+      valid = false;
+    }
+    if (!valid) return;
+
+    const btn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    btn.disabled = true;
+    spinner.style.display = 'inline';
+
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName, lastName, username, email, phone, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Registration failed. Please try again.');
+        return;
+      }
+
+      localStorage.setItem('luca_token', data.token);
+      localStorage.setItem('luca_user', JSON.stringify(data.user));
+
+      showSuccess('Account created! Redirecting to your ledger...');
+      setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+
+    } catch (err) {
+      showError('Network error. Check your connection and try again.');
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+    }
+  }
+</script>
+</body>
+</html>
